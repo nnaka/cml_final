@@ -81,7 +81,10 @@ class RetrievalAugmentor:
         messages = [
             {
                 "role": "system",
-                "content": "You are a friendly chatbot who always responds in the style of a pirate",
+                "content": "You are a helpful AI assistant and your goal is to "
+                "answer questions as ccurately as possible based on the context provided. If you "
+                "cannot find the correct answer, reply I don’t know. Be concise and just include "
+                "the response.",
             },
             {"role": "user", "content": user_prompt},
         ]
