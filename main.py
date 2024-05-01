@@ -1,11 +1,12 @@
 from typing import List, Dict, Any
 
+from accelerate import disk_offload
 import chromadb
 from chromadb.utils import embedding_functions
 from flask import Flask, request, jsonify
 import pandas as pd
 import torch
-from transformers import pipeline
+from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 
 
 app = Flask(__name__)
@@ -16,12 +17,19 @@ class RetrievalAugmentor:
         self._default_ef = embedding_functions.DefaultEmbeddingFunction()
         self._chroma_client = chromadb.Client()
         self._collection = self._prepare_db()
+        """
         self._pipe = pipeline(
             "text-generation",
             model="TinyLlama/TinyLlama-1.1B-Chat-v1.0",
             torch_dtype=torch.bfloat16,
             device_map="auto",
         )
+        """
+        # Loading model directly
+        # Handle ValueError: You are trying to offload the whole model to the disk.
+        self._tokenizer = AutoTokenizer.from_pretrained("TinyLlama/TinyLlama-1.1B-Chat-v1.0")
+        self._model = AutoModelForCausalLM.from_pretrained("TinyLlama/TinyLlama-1.1B-Chat-v1.0")
+        disk_offload(model=self._model, offload_dir=".")
 
     def _format_data(self):
         df = pd.read_csv("./data/oscars.csv")
@@ -88,14 +96,27 @@ class RetrievalAugmentor:
             },
             {"role": "user", "content": user_prompt},
         ]
-        return self._pipe.tokenizer.apply_chat_template(
+        return self._tokenizer.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True
         )
+        # return self._tokenizer(str(messages))
+        # return self._pipe.tokenizer.apply_chat_template(
+        #     messages, tokenize=False, add_generation_prompt=True
+        # )
 
     def make_llm_query(self, query: str) -> str:
+        """
         outputs = self._pipe(
             query,
             max_new_tokens=1024,
+            do_sample=True,
+            temperature=0.1,
+            top_k=50,
+            top_p=0.95,
+        )
+        """
+        outputs = self._model(
+            query,
             do_sample=True,
             temperature=0.1,
             top_k=50,
