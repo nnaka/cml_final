@@ -1,17 +1,42 @@
 #! /usr/bin/bash
 
 query="who is the lead actress in everything everywhere all at once?"
-#query="who is the director for everything everywhere all at once?"
-#query="who won the oscar for everything everywhere all at once?"
+# query="who is the director for everything everywhere all at once?"
+# query="who won the oscar for everything everywhere all at once?"
 
 echo "Query: $query"
 
 echo "RAG response:"
 url="http://127.0.0.1:5000/search?query=$query"
 escaped_url=$(echo "$url" | sed 's/ /%20/g')
-curl "$escaped_url"
+# curl -s -o /dev/null -w "Total time: %{time_total}\n" "$escaped_url"
+# curl -s "$escaped_url" && echo "Total time: $(($(date +%s.%N) - $(date +%s.%N))%N)"
+
+# Make the cURL request and capture the output
+response=$(curl -s -w "\nTime taken: %{time_total} seconds\n" -o /dev/null "$escaped_url")
+
+# Print the response
+echo "Response:"
+echo "$response"
+
+# Extract and print the time taken
+time_taken=$(echo "$response" | grep -oP 'Time taken: \K\d+(\.\d+)?')
+echo "Time taken: $time_taken seconds"
+
 
 echo "Non-RAG response:"
 url="http://127.0.0.1:5000/search_simple?query=$query"
 escaped_url=$(echo "$url" | sed 's/ /%20/g')
-curl "$escaped_url"
+# curl -s -o /dev/null -w "Total time: %{time_total}\n" "$escaped_url"
+# curl -s "$escaped_url" && echo "Total time: $(($(date +%s.%N) - $(date +%s.%N))%N)"
+
+# Make the cURL request and capture the output
+response=$(curl -s -w "\nTime taken: %{time_total} seconds\n" -o /dev/null "$escaped_url")
+
+# Print the response
+echo "Response:"
+echo "$response"
+
+# Extract and print the time taken
+time_taken=$(echo "$response" | grep -oP 'Time taken: \K\d+(\.\d+)?')
+echo "Time taken: $time_taken seconds"
