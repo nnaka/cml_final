@@ -27,8 +27,12 @@ class RetrievalAugmentor:
         """
         # Loading model directly
         # Handle ValueError: You are trying to offload the whole model to the disk.
-        self._tokenizer = AutoTokenizer.from_pretrained("TinyLlama/TinyLlama-1.1B-Chat-v1.0")
-        self._model = AutoModelForCausalLM.from_pretrained("TinyLlama/TinyLlama-1.1B-Chat-v1.0")
+        self._tokenizer = AutoTokenizer.from_pretrained(
+            "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+        )
+        self._model = AutoModelForCausalLM.from_pretrained(
+            "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+        )
         disk_offload(model=self._model, offload_dir=".")
 
     def _format_data(self):
@@ -96,9 +100,10 @@ class RetrievalAugmentor:
             },
             {"role": "user", "content": user_prompt},
         ]
-        return self._tokenizer.apply_chat_template(
-            messages, tokenize=False, add_generation_prompt=True
-        )
+        return self._tokenizer(user_prompt, return_tensors="pt")
+        # return self._tokenizer.apply_chat_template(
+        #     messages, tokenize=False, add_generation_prompt=True
+        # )
         # return self._tokenizer(str(messages))
         # return self._pipe.tokenizer.apply_chat_template(
         #     messages, tokenize=False, add_generation_prompt=True
@@ -115,6 +120,7 @@ class RetrievalAugmentor:
             top_p=0.95,
         )
         """
+        """
         outputs = self._model(
             query,
             do_sample=True,
@@ -123,6 +129,12 @@ class RetrievalAugmentor:
             top_p=0.95,
         )
         return outputs[0]["generated_text"]
+        """
+
+        generate_ids = self._model.generate(query.input_ids, max_length=600)
+        return self._tokenizer.batch_decode(
+            generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False
+        )[0]
 
 
 ag: RetrievalAugmentor = RetrievalAugmentor()
@@ -143,7 +155,8 @@ def search() -> Any:
     print(f"augmented_prompt: {augmented_prompt}")
     response: str = ag.make_llm_query(augmented_prompt)
     # Get the response
-    response = response.split("<|assistant|>", 1)[1].replace("\n", "")
+    # response = response.split("<|assistant|>", 1)[1].replace("\n", "")
+    response = response.split("Answer: ", 1)[1].replace("\n", "")
     return jsonify({"response": response})
 
 
