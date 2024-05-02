@@ -17,7 +17,9 @@ class RetrievalAugmentor:
         self._default_ef = embedding_functions.DefaultEmbeddingFunction()
         self._chroma_client = chromadb.Client()
         self._collection = self._prepare_db()
-        self._device = "cpu"  # torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self._device = (
+            "cpu"  # torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        )
 
         # Loading model directly
         # Handle ValueError: You are trying to offload the whole model to the disk.
@@ -85,16 +87,19 @@ class RetrievalAugmentor:
             {
                 "role": "system",
                 "content": "You are a helpful AI assistant and your goal is to "
-                "answer questions as ccurately as possible based on the context provided. If you "
+                "answer questions as accurately as possible based on the context provided. If you "
                 "cannot find the correct answer, reply I don’t know. Be concise and just include "
                 "the response.",
             },
             {"role": "user", "content": user_prompt},
         ]
-        return self._tokenizer(user_prompt, return_tensors="pt")
+        return user_prompt
 
     def make_llm_query(self, query: str) -> str:
-        generate_ids = self._model.generate(query.input_ids, max_length=600).to(device=self._device)
+        query = self._tokenizer(query, return_tensors="pt")
+        generate_ids = self._model.generate(query.input_ids, max_length=600).to(
+            device=self._device
+        )
         return self._tokenizer.batch_decode(
             generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False
         )[0]
@@ -108,9 +113,29 @@ def add() -> Any:
     pass
 
 
+@app.route("/search_simple", methods=["GET"])
+def search_simple() -> Any:
+    query: str = request.args.get("query")
+    if not query:
+        return jsonify({"error": "Query parameter is missing"}), 400
+
+    augmented_prompt: str = ag.generate_augmented_prompt(query)
+    response: str = ag.make_llm_query(f"Answer the following query: {query}")
+    # Get the response
+    # import pdb; pdb.set_trace()
+    if "Answer: " in response:
+        response = response.split("Answer: ", 1)[1].replace("\n", "")
+    elif "answer: " in response:
+        response = response.split("answer: ", 1)[1].replace("\n", "")
+    else:
+        response = "Unable to find results for the given query"
+    print(jsonify({"response": response}))
+    return jsonify({"response": response})
+
+
 @app.route("/search", methods=["GET"])
 def search() -> Any:
-    query = request.args.get("query")
+    query: str = request.args.get("query")
     if not query:
         return jsonify({"error": "Query parameter is missing"}), 400
 
@@ -118,10 +143,14 @@ def search() -> Any:
     print(f"augmented_prompt: {augmented_prompt}")
     response: str = ag.make_llm_query(augmented_prompt)
     # Get the response
-    response = response.split("Answer: ", 1)[1].replace("\n", "")
+    # import pdb; pdb.set_trace()
+    if "Answer: " in response:
+        response = response.split("Answer: ", 1)[1].replace("\n", "")
+    elif "answer: " in response:
+        response = response.split("answer: ", 1)[1].replace("\n", "")
     print(jsonify({"response": response}))
     return jsonify({"response": response})
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host="0.0.0.0", port=5000)
