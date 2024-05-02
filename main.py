@@ -17,14 +17,6 @@ class RetrievalAugmentor:
         self._default_ef = embedding_functions.DefaultEmbeddingFunction()
         self._chroma_client = chromadb.Client()
         self._collection = self._prepare_db()
-        """
-        self._pipe = pipeline(
-            "text-generation",
-            model="TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-            torch_dtype=torch.bfloat16,
-            device_map="auto",
-        )
-        """
         # Loading model directly
         # Handle ValueError: You are trying to offload the whole model to the disk.
         self._tokenizer = AutoTokenizer.from_pretrained(
@@ -77,10 +69,6 @@ class RetrievalAugmentor:
             include=["documents"],
         )
 
-    def generate_prompt(self, documents: List[Dict[str, Any]]) -> str:
-        # Generate a new prompt based on the documents
-        return new_prompt
-
     def generate_augmented_prompt(self, query: str) -> str:
         relevant_documents: List[str] = self.search_chroma_db(query)
         context = "\n".join(str(item) for item in relevant_documents["documents"][0])
@@ -101,36 +89,8 @@ class RetrievalAugmentor:
             {"role": "user", "content": user_prompt},
         ]
         return self._tokenizer(user_prompt, return_tensors="pt")
-        # return self._tokenizer.apply_chat_template(
-        #     messages, tokenize=False, add_generation_prompt=True
-        # )
-        # return self._tokenizer(str(messages))
-        # return self._pipe.tokenizer.apply_chat_template(
-        #     messages, tokenize=False, add_generation_prompt=True
-        # )
 
     def make_llm_query(self, query: str) -> str:
-        """
-        outputs = self._pipe(
-            query,
-            max_new_tokens=1024,
-            do_sample=True,
-            temperature=0.1,
-            top_k=50,
-            top_p=0.95,
-        )
-        """
-        """
-        outputs = self._model(
-            query,
-            do_sample=True,
-            temperature=0.1,
-            top_k=50,
-            top_p=0.95,
-        )
-        return outputs[0]["generated_text"]
-        """
-
         generate_ids = self._model.generate(query.input_ids, max_length=600)
         return self._tokenizer.batch_decode(
             generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False
@@ -155,7 +115,6 @@ def search() -> Any:
     print(f"augmented_prompt: {augmented_prompt}")
     response: str = ag.make_llm_query(augmented_prompt)
     # Get the response
-    # response = response.split("<|assistant|>", 1)[1].replace("\n", "")
     response = response.split("Answer: ", 1)[1].replace("\n", "")
     return jsonify({"response": response})
 
