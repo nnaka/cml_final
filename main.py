@@ -119,6 +119,7 @@ def search() -> Any:
     response: str = ag.make_llm_query(augmented_prompt)
     # Get the response
     response = response.split("Answer: ", 1)[1].replace("\n", "")
+    print(jsonify({"response": response}))
     return jsonify({"response": response})
 
 
