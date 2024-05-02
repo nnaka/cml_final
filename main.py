@@ -17,6 +17,8 @@ class RetrievalAugmentor:
         self._default_ef = embedding_functions.DefaultEmbeddingFunction()
         self._chroma_client = chromadb.Client()
         self._collection = self._prepare_db()
+        self._device = "cpu"  # torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
         # Loading model directly
         # Handle ValueError: You are trying to offload the whole model to the disk.
         self._tokenizer = AutoTokenizer.from_pretrained(
@@ -24,7 +26,8 @@ class RetrievalAugmentor:
         )
         self._model = AutoModelForCausalLM.from_pretrained(
             "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-        )
+        ).to(device=self._device)
+
         disk_offload(model=self._model, offload_dir=".")
 
     def _format_data(self):
@@ -91,7 +94,7 @@ class RetrievalAugmentor:
         return self._tokenizer(user_prompt, return_tensors="pt")
 
     def make_llm_query(self, query: str) -> str:
-        generate_ids = self._model.generate(query.input_ids, max_length=600)
+        generate_ids = self._model.generate(query.input_ids, max_length=600).to(device=self._device)
         return self._tokenizer.batch_decode(
             generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False
         )[0]
