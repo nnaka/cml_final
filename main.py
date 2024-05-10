@@ -97,7 +97,8 @@ class RetrievalAugmentor:
 
     def make_llm_query(self, query: str) -> str:
         query = self._tokenizer(query, return_tensors="pt")
-        generate_ids = self._model.generate(query.input_ids, max_length=600).to(
+        max_length: int = query.input_ids.shape[-1] + 50
+        generate_ids = self._model.generate(query.input_ids, max_length=max_length).to(
             device=self._device
         )
         return self._tokenizer.batch_decode(
@@ -123,9 +124,9 @@ def search_simple() -> Any:
     response: str = ag.make_llm_query(f"Answer the following query: {query}")
     # Get the response
     # import pdb; pdb.set_trace()
-    if "Answer: " in response:
+    if "Answer:" in response:
         response = response.split("Answer: ", 1)[1].replace("\n", "")
-    elif "answer: " in response:
+    elif "answer:" in response:
         response = response.split("answer: ", 1)[1].replace("\n", "")
     else:
         response = "Unable to find results for the given query"
