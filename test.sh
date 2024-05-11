@@ -1,10 +1,10 @@
 #! /usr/bin/bash
 
-query="who is the lead actress in everything everywhere all at once?"
-query="who is the director for everything everywhere all at once?"
-query="who won the oscar for everything everywhere all at once?"  #
-query="who won best picture in 2023 oscars?"  # both correct
-query="Tell me something about lady gaga"  # rag better
+# query="Who was the lead actress in Everything, Everywhere, All at Once?"
+# query="who is the director for everything everywhere all at once?"
+query="Who won the Oscar for Everything, Everywhere, All at Once?"
+# query="who won best picture in 2023 oscars?"  # both correct
+# query="Tell me something about lady gaga"  # rag better
 # query="who won best actor in 2023 oscars?"  # rag better
 # query="what did Living - Kazuo Ishiguro get nominated for in the oscars?"  # rag better
 

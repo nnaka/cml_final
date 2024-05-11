@@ -23,17 +23,17 @@ class RetrievalAugmentor:
 
         # Loading model directly
         # Handle ValueError: You are trying to offload the whole model to the disk.
-        self._tokenizer = AutoTokenizer.from_pretrained(
+        self._tokenizer: Any = AutoTokenizer.from_pretrained(
             "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
         )
-        self._model = AutoModelForCausalLM.from_pretrained(
+        self._model: Any = AutoModelForCausalLM.from_pretrained(
             "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
         ).to(device=self._device)
 
         disk_offload(model=self._model, offload_dir=".")
 
-    def _format_data(self):
-        df = pd.read_csv("./data/oscars.csv")
+    def _format_data(self) -> pd.DataFrame:
+        df: pd.DataFrame = pd.read_csv("./data/oscars.csv")
         df = df.loc[df["year_ceremony"] == 2023]
         df = df.dropna(subset=["film"])
         df.loc[:, "category"] = df["category"].str.lower()
@@ -55,7 +55,7 @@ class RetrievalAugmentor:
         )
         return df
 
-    def _prepare_db(self):
+    def _prepare_db(self) -> Any:
         collection = self._chroma_client.create_collection(name="my_collection")
         df = self._format_data()
         docs = df["text"].tolist()
@@ -76,14 +76,16 @@ class RetrievalAugmentor:
 
     def generate_augmented_prompt(self, query: str) -> str:
         relevant_documents: List[str] = self.search_chroma_db(query)
-        context = "\n".join(str(item) for item in relevant_documents["documents"][0])
-        user_prompt = f"""
+        context: str = "\n".join(
+            str(item) for item in relevant_documents["documents"][0]
+        )
+        user_prompt: str = f"""
             Based on the context:
             {context}
             Answer the below query:
             {query}
             """
-        messages = [
+        messages: List[Dict[str, str]] = [
             {
                 "role": "system",
                 "content": "You are a helpful AI assistant and your goal is to "
