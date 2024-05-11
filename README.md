@@ -16,7 +16,7 @@ On GKE, run
 kubectl apply -f deployment.yaml
 kubectl get svc to see the External IP and port
 Go to the url place of your browser and type:
-For non-RAG LLM : <External IP>:<Port>/search_simple?query=<query>
-For RAG LLM : <External IP>:<Port>/search?query=<query>
+For non-RAG LLM : External IP:Port/search_simple?query=<query>
+For RAG LLM : External IP:Port/search?query=<query>
 
 
